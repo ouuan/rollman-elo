@@ -223,7 +223,7 @@ impl Stats {
           <td><button onclick="copy('{}')">token</button>
         </tr>"#,
                 row_style(
-                    agent.rollman_count < self.agents.len(),
+                    agent.rollman_count < ghosts.len(),
                     agent.rollman_time,
                     last_match,
                     rollman_users.insert(agent.user.clone())
@@ -267,7 +267,7 @@ impl Stats {
           <td><button onclick="copy('{}')">token</button>
         </tr>"#,
                 row_style(
-                    agent.ghost_count < self.agents.len(),
+                    agent.ghost_count < rollmen.len(),
                     agent.ghost_time,
                     last_match,
                     ghost_users.insert(agent.user.clone())
