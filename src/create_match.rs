@@ -92,7 +92,9 @@ pub fn create_matches(stats: &Stats) {
                 .get(rollman)
                 .and_then(|m| m.get(ghost).copied())
                 .unwrap_or_default();
-            let weight = ((rollman_elo - ghost_elo).abs() / ELO_STEP).exp();
+            let diff = (rollman_elo - ghost_elo).abs();
+            let sum = rollman_elo + ghost_elo;
+            let weight = ((diff - sum / 4.0) / ELO_STEP).exp();
             pairs.push((
                 rollman,
                 ghost,
