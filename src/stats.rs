@@ -163,12 +163,15 @@ impl Stats {
 <head>
   <title>RollMan Ranking</title>
   <style>
-    table {{ border-collapse: collapse; }}
+    table {{ border-collapse: collapse; margin-top: 1rem; }}
     th, td {{ padding: 10px; border: 1px solid #ddd; }}
     th {{ background-color: #f5f5f5; }}
     .flex {{ display: flex; flex-wrap: wrap; justify-content: space-around; }}
     .best {{ font-weight: bold; }}
     .unreliable {{ opacity: 0.5; }}
+    .best-only:checked ~ table tr:not(.best):not(:first-child) {{ display: none; }}
+    tr:not(:first-child) {{ counter-increment: row-num; }}
+    tr:not(:first-child) td:first-child::before {{ content: counter(row-num); }}
   </style>
   <script>
     function copy(token) {{
@@ -208,16 +211,18 @@ impl Stats {
             r#"
     <section>
       <h2>Rollman Ranking</h2>
+      <input type="checkbox" class="best-only" id="best-only-rollman">
+      <label for="best-only-rollman">只显示每个用户的最强 rollman</label>
       <table>
         <tr><th>#</th><th>User</th><th>Bot</th><th>Ver.</th><th>Elo</th><th>#M</th><th>Token</th></tr>"#
         )?;
 
-        for (rank, (token, agent)) in rollmen.iter().enumerate() {
+        for (token, agent) in &rollmen {
             write!(
                 buf,
                 r#"
         <tr{}>
-          <td>{}</td>
+          <td></td>
           <td><a href="https://www.saiblo.net/user/{}">{}</a></td>
           <td>{}</td><td>{}</td><td {}>{:.0}</td><td>{}</td>
           <td><button onclick="copy('{}')">token</button>
@@ -228,7 +233,6 @@ impl Stats {
                     last_match,
                     rollman_users.insert(agent.user.clone())
                 ),
-                rank + 1,
                 escape_html(&agent.user),
                 escape_html(&agent.user),
                 escape_html(&agent.name),
@@ -250,18 +254,20 @@ impl Stats {
             r#"
     <section>
       <h2>Ghost Ranking</h2>
+      <input type="checkbox" class="best-only" id="best-only-ghost">
+      <label for="best-only-ghost">只显示每个用户的最强 ghost</label>
       <table>
         <tr><th>#</th><th>User</th><th>Bot</th><th>Ver.</th><th>Elo</th><th>#M</th><th>Token</th></tr>"#
         )?;
 
         let mut ghost_users = HashSet::new();
 
-        for (rank, (token, agent)) in ghosts.iter().enumerate() {
+        for (token, agent) in &ghosts {
             write!(
                 buf,
                 r#"
         <tr{}>
-          <td>{}</td>
+          <td></td>
           <td><a href="https://www.saiblo.net/user/{}">{}</a></td>
           <td>{}</td><td>{}</td><td {}>{:.0}</td><td>{}</td>
           <td><button onclick="copy('{}')">token</button>
@@ -272,7 +278,6 @@ impl Stats {
                     last_match,
                     ghost_users.insert(agent.user.clone())
                 ),
-                rank + 1,
                 escape_html(&agent.user),
                 escape_html(&agent.user),
                 escape_html(&agent.name),
