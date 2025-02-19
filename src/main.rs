@@ -4,12 +4,21 @@ mod elo;
 mod fetch;
 mod stats;
 
+use chrono::{Local, Timelike};
 use color_eyre::eyre::Result;
 use create_match::create_matches;
 use stats::Stats;
+use std::thread::sleep;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
+
+    let now = Local::now();
+    if matches!(now.hour(), 3 | 4) {
+        let next_five = now.with_hour(5).unwrap().with_minute(0).unwrap();
+        let duration = (next_five - now).to_std().unwrap();
+        sleep(duration);
+    }
 
     let mut stats = Stats::load()?;
 
