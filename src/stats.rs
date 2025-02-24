@@ -35,12 +35,12 @@ impl Stats {
         ghost.ghost_time = ghost.ghost_time.min(id);
         let ghost_elo = ghost.ghost_elo;
 
-        for n in self
+        let rollman_matches = self
             .matches_with_rollman
             .get(&m.rollman)
-            .unwrap_or(&Vec::new())
-            .iter()
-        {
+            .map_or::<&[_], _>(&[], Vec::as_slice);
+
+        for n in rollman_matches {
             if n.ghost == m.ghost {
                 continue;
             }
@@ -51,17 +51,17 @@ impl Stats {
             };
             let a = self.agents.get(&m.ghost).unwrap().ghost_elo;
             let b = self.agents.get(&n.ghost).unwrap().ghost_elo;
-            let (new_a, new_b) = elo(a, b, win, rollman_elo);
+            let (new_a, new_b) = elo(a, b, win, rollman_elo, rollman_matches.len());
             self.agents.get_mut(&m.ghost).unwrap().ghost_elo = new_a;
             self.agents.get_mut(&n.ghost).unwrap().ghost_elo = new_b;
         }
 
-        for n in self
+        let ghost_matches = self
             .matches_with_ghost
             .get(&m.ghost)
-            .unwrap_or(&Vec::new())
-            .iter()
-        {
+            .map_or::<&[_], _>(&[], Vec::as_slice);
+
+        for n in ghost_matches {
             if n.rollman == m.rollman {
                 continue;
             }
@@ -72,7 +72,7 @@ impl Stats {
             };
             let a = self.agents.get(&m.rollman).unwrap().rollman_elo;
             let b = self.agents.get(&n.rollman).unwrap().rollman_elo;
-            let (new_a, new_b) = elo(a, b, win, ghost_elo);
+            let (new_a, new_b) = elo(a, b, win, ghost_elo, ghost_matches.len());
             self.agents.get_mut(&m.rollman).unwrap().rollman_elo = new_a;
             self.agents.get_mut(&n.rollman).unwrap().rollman_elo = new_b;
         }
