@@ -10,4 +10,4 @@ pub static TOKEN: LazyLock<String> =
 pub const MAX_MATCHES: usize = 210;
 pub const RECENT_THRESHOLD: u32 = 5000;
 pub const ELO_BASE: f32 = 1500.0;
-pub const ELO_STEP: f32 = 400.0;
+pub const ELO_STEP: f32 = 300.0;
