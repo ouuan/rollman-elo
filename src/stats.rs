@@ -407,11 +407,11 @@ impl Agent {
     }
 
     pub fn can_rollman(&self) -> bool {
-        self.rollman_count > self.failure.len().saturating_sub(20)
+        self.rollman_count > self.failure.len().saturating_sub(50) * 10
     }
 
     pub fn can_ghost(&self) -> bool {
-        self.ghost_count > self.failure.len().saturating_sub(20)
+        self.ghost_count > self.failure.len().saturating_sub(50) * 10
     }
 }
 
