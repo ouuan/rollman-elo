@@ -77,7 +77,7 @@ struct Count {
 }
 
 pub fn create_matches(stats: &Stats) {
-    const THRESHOLD: f32 = ELO_BASE - ELO_STEP;
+    const THRESHOLD: f32 = ELO_BASE - ELO_STEP / 1.5;
 
     let mut pairs = Vec::new();
 
