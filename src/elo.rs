@@ -1,6 +1,6 @@
 use crate::constants::*;
 
-const K: f32 = 10.0;
+const K: f32 = 5.0;
 
 pub fn elo(a: f32, b: f32, a_win: f32, opp: f32, match_count: usize) -> (f32, f32) {
     let pa = 1.0 / (1.0 + 10.0_f32.powf((b - a) / ELO_STEP));
