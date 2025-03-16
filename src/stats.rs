@@ -3,6 +3,7 @@ use crate::elo::elo;
 use chrono::Local;
 use color_eyre::eyre::Result;
 use ordered_float::OrderedFloat;
+use rand::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::{Ordering, Reverse};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
@@ -106,9 +107,6 @@ impl Stats {
         let buf = BufReader::new(storage);
         let mut stats: Self = serde_json::from_reader(buf)?;
 
-        let mut matches = BTreeMap::new();
-        std::mem::swap(&mut stats.matches, &mut matches);
-
         for a in stats.agents.values_mut() {
             a.rollman_elo = ELO_BASE;
             a.ghost_elo = ELO_BASE;
@@ -117,6 +115,11 @@ impl Stats {
             a.rollman_time = u32::MAX;
             a.ghost_time = u32::MAX;
         }
+
+        let mut matches = BTreeMap::new();
+        std::mem::swap(&mut stats.matches, &mut matches);
+        let mut matches = matches.into_iter().collect::<Vec<_>>();
+        matches.shuffle(&mut rand::rng());
 
         for (id, m) in matches {
             stats.add_match(id, m);
