@@ -116,7 +116,11 @@ pub fn fetch(stats: &mut Stats, awaiting: u32, page: usize) -> Result<bool> {
         } else {
             continue;
         };
-        let replay_line: ReplayLine = serde_json::from_str(&last_line)?;
+        let replay_line: ReplayLine = if let Ok(replay_line) = serde_json::from_str(&last_line) {
+            replay_line
+        } else {
+            continue;
+        };
         let (rollman_score, ghost_score) = replay_line.score;
 
         let (rollman, ghost) =
