@@ -119,7 +119,25 @@ impl Stats {
         let mut matches = BTreeMap::new();
         std::mem::swap(&mut stats.matches, &mut matches);
         let mut matches = matches.into_iter().collect::<Vec<_>>();
-        matches.shuffle(&mut rand::rng());
+
+        let rng = &mut rand::rng();
+        matches.shuffle(rng);
+
+        for (id, m) in matches.clone() {
+            stats.add_match(id, m);
+        }
+
+        stats.matches.clear();
+        stats.matches_with_rollman.clear();
+        stats.matches_with_ghost.clear();
+        stats.count_rollman_ghost.clear();
+
+        for a in stats.agents.values_mut() {
+            a.rollman_count = 0;
+            a.ghost_count = 0;
+        }
+
+        matches.shuffle(rng);
 
         for (id, m) in matches {
             stats.add_match(id, m);
