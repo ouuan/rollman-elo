@@ -255,11 +255,16 @@ impl Stats {
                 .get(*token)
                 .unwrap()
                 .iter()
-                .map(|(id, _)| Reverse(id))
+                .map(|(id, _)| (Reverse(*id), false))
+                .chain(agent.failure.iter().map(|id| (Reverse(*id), true)))
                 .collect::<Vec<_>>();
             let fail_count = if matches.len() > RECENT_MATCH_COUNT {
-                let since = matches.select_nth_unstable(RECENT_MATCH_COUNT).1;
-                agent.failure.iter().filter(|id| *id > since.0).count()
+                matches
+                    .select_nth_unstable(RECENT_MATCH_COUNT)
+                    .0
+                    .iter()
+                    .filter(|(_, f)| *f)
+                    .count()
             } else {
                 agent.failure.len()
             };
@@ -323,11 +328,16 @@ impl Stats {
                 .get(*token)
                 .unwrap()
                 .iter()
-                .map(|(id, _)| Reverse(id))
+                .map(|(id, _)| (Reverse(*id), false))
+                .chain(agent.failure.iter().map(|id| (Reverse(*id), true)))
                 .collect::<Vec<_>>();
             let fail_count = if matches.len() > RECENT_MATCH_COUNT {
-                let since = matches.select_nth_unstable(RECENT_MATCH_COUNT).1;
-                agent.failure.iter().filter(|id| *id > since.0).count()
+                matches
+                    .select_nth_unstable(RECENT_MATCH_COUNT)
+                    .0
+                    .iter()
+                    .filter(|(_, f)| *f)
+                    .count()
             } else {
                 agent.failure.len()
             };
