@@ -17,9 +17,9 @@ pub struct Stats {
     pub logic_version: u16,
     pub awaiting: u32,
     #[serde(skip)]
-    pub matches_with_rollman: HashMap<String, Vec<Match>>,
+    pub matches_with_rollman: HashMap<String, Vec<(u32, Match)>>,
     #[serde(skip)]
-    pub matches_with_ghost: HashMap<String, Vec<Match>>,
+    pub matches_with_ghost: HashMap<String, Vec<(u32, Match)>>,
     #[serde(skip)]
     pub count_rollman_ghost: HashMap<String, HashMap<String, u32>>,
 }
@@ -41,7 +41,7 @@ impl Stats {
             .get(&m.rollman)
             .map_or::<&[_], _>(&[], Vec::as_slice);
 
-        for n in rollman_matches {
+        for (_, n) in rollman_matches {
             if n.ghost == m.ghost {
                 continue;
             }
@@ -62,7 +62,7 @@ impl Stats {
             .get(&m.ghost)
             .map_or::<&[_], _>(&[], Vec::as_slice);
 
-        for n in ghost_matches {
+        for (_, n) in ghost_matches {
             if n.rollman == m.rollman {
                 continue;
             }
@@ -81,11 +81,11 @@ impl Stats {
         self.matches_with_rollman
             .entry(m.rollman.clone())
             .or_default()
-            .push(m.clone());
+            .push((id, m.clone()));
         self.matches_with_ghost
             .entry(m.ghost.clone())
             .or_default()
-            .push(m.clone());
+            .push((id, m.clone()));
         self.count_rollman_ghost
             .entry(m.rollman.clone())
             .or_default()
@@ -176,6 +176,8 @@ impl Stats {
         rollmen.sort_by_key(|(_, a)| Reverse(OrderedFloat(a.rollman_elo)));
         ghosts.sort_by_key(|(_, a)| Reverse(OrderedFloat(a.ghost_elo)));
 
+        const RECENT_MATCH_COUNT: usize = 100;
+
         write!(
             buf,
             r#"<!DOCTYPE html>
@@ -235,17 +237,39 @@ impl Stats {
       <input type="checkbox" class="best-only" id="best-only-rollman">
       <label for="best-only-rollman">只显示每个用户的最强 rollman</label>
       <table>
-        <tr><th>#</th><th>User</th><th>Bot</th><th>Ver.</th><th>Elo</th><th>#M</th><th>Token</th></tr>"#
+        <tr>
+            <th>#</th>
+            <th>User</th>
+            <th>Bot</th>
+            <th>Ver.</th>
+            <th>Elo</th>
+            <th title="对局数">#M</th>
+            <th title="近{RECENT_MATCH_COUNT}局中的fail数">F%</th>
+            <th>Token</th>
+        </tr>"#
         )?;
 
         for (token, agent) in &rollmen {
+            let mut matches = self
+                .matches_with_rollman
+                .get(*token)
+                .unwrap()
+                .iter()
+                .map(|(id, _)| Reverse(id))
+                .collect::<Vec<_>>();
+            let fail_count = if matches.len() > RECENT_MATCH_COUNT {
+                let since = matches.select_nth_unstable(RECENT_MATCH_COUNT).1;
+                agent.failure.iter().filter(|id| *id > since.0).count()
+            } else {
+                agent.failure.len()
+            };
             write!(
                 buf,
                 r#"
         <tr{}>
           <td></td>
           <td><a href="https://www.saiblo.net/user/{}">{}</a></td>
-          <td>{}</td><td>{}</td><td {}>{:.0}</td><td>{}</td>
+          <td>{}</td><td>{}</td><td {}>{:.0}</td><td>{}</td><td>{}</td>
           <td><button onclick="copy('{}')">token</button>
         </tr>"#,
                 row_style(
@@ -261,6 +285,7 @@ impl Stats {
                 rating_color(agent.rollman_elo),
                 agent.rollman_elo,
                 agent.rollman_count,
+                fail_count,
                 token,
             )?;
         }
@@ -278,19 +303,41 @@ impl Stats {
       <input type="checkbox" class="best-only" id="best-only-ghost">
       <label for="best-only-ghost">只显示每个用户的最强 ghost</label>
       <table>
-        <tr><th>#</th><th>User</th><th>Bot</th><th>Ver.</th><th>Elo</th><th>#M</th><th>Token</th></tr>"#
+        <tr>
+            <th>#</th>
+            <th>User</th>
+            <th>Bot</th>
+            <th>Ver.</th>
+            <th>Elo</th>
+            <th title="对局数">#M</th>
+            <th title="近{RECENT_MATCH_COUNT}局中的fail数">F%</th>
+            <th>Token</th>
+        </tr>"#
         )?;
 
         let mut ghost_users = HashSet::new();
 
         for (token, agent) in &ghosts {
+            let mut matches = self
+                .matches_with_ghost
+                .get(*token)
+                .unwrap()
+                .iter()
+                .map(|(id, _)| Reverse(id))
+                .collect::<Vec<_>>();
+            let fail_count = if matches.len() > RECENT_MATCH_COUNT {
+                let since = matches.select_nth_unstable(RECENT_MATCH_COUNT).1;
+                agent.failure.iter().filter(|id| *id > since.0).count()
+            } else {
+                agent.failure.len()
+            };
             write!(
                 buf,
                 r#"
         <tr{}>
           <td></td>
           <td><a href="https://www.saiblo.net/user/{}">{}</a></td>
-          <td>{}</td><td>{}</td><td {}>{:.0}</td><td>{}</td>
+          <td>{}</td><td>{}</td><td {}>{:.0}</td><td>{}</td><td>{}</td>
           <td><button onclick="copy('{}')">token</button>
         </tr>"#,
                 row_style(
@@ -306,6 +353,7 @@ impl Stats {
                 rating_color(agent.ghost_elo),
                 agent.ghost_elo,
                 agent.ghost_count,
+                fail_count,
                 token,
             )?;
         }
