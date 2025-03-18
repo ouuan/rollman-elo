@@ -106,7 +106,7 @@ pub fn create_matches(stats: &Stats) {
     pairs.shuffle(&mut rand::rng());
     pairs.sort_unstable_by_key(|(_, _, count)| *count);
 
-    let res: Count = ureq::get(format!("{BASE_URL}/matches/"))
+    let judging: Count = ureq::get(format!("{BASE_URL}/matches/"))
         .query("limit", "1")
         .query("state", "评测中")
         .query("game", GAME_ID.to_string())
@@ -116,7 +116,17 @@ pub fn create_matches(stats: &Stats) {
         .into_body()
         .read_json()
         .expect("invalid matches JSON");
-    let create_count = MAX_MATCHES.saturating_sub(res.count);
+    let waiting: Count = ureq::get(format!("{BASE_URL}/matches/"))
+        .query("limit", "1")
+        .query("state", "准备中")
+        .query("game", GAME_ID.to_string())
+        .header(TOKEN_HEADER, &*TOKEN)
+        .call()
+        .expect("failed to get waiting matches")
+        .into_body()
+        .read_json()
+        .expect("invalid matches JSON");
+    let create_count = MAX_MATCHES.saturating_sub(judging.count + waiting.count);
 
     for (rollman, ghost, _) in pairs.into_iter().take(create_count) {
         if let Err(e) = create_match(rollman, ghost) {
