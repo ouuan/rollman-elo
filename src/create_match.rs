@@ -4,6 +4,8 @@ use color_eyre::eyre::Result;
 use ordered_float::NotNan;
 use rand::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::Reverse;
+use std::collections::HashMap;
 use ureq::Body;
 
 #[derive(Serialize)]
@@ -81,20 +83,63 @@ pub fn create_matches(stats: &Stats) {
 
     let mut pairs = Vec::new();
 
-    for (rollman, rollman_elo) in stats.agents.iter().filter_map(|(id, agent)| {
-        (agent.can_rollman() && agent.rollman_elo > THRESHOLD).then_some((id, agent.rollman_elo))
+    let mut rollmen_by_user = HashMap::new();
+    for (rollman, elo, user) in stats.agents.iter().filter_map(|(id, agent)| {
+        (agent.can_rollman() && agent.rollman_elo > THRESHOLD).then_some((
+            id,
+            agent.rollman_elo,
+            agent.user.clone(),
+        ))
     }) {
-        for (ghost, ghost_elo) in stats.agents.iter().filter_map(|(id, agent)| {
-            (agent.can_ghost() && agent.ghost_elo > THRESHOLD).then_some((id, agent.ghost_elo))
-        }) {
+        rollmen_by_user
+            .entry(user)
+            .or_insert_with(Vec::new)
+            .push((Reverse(NotNan::new(elo).unwrap()), rollman));
+    }
+    let rollmen = rollmen_by_user.into_values().flat_map(|mut user_rollmen| {
+        user_rollmen.sort_unstable();
+        user_rollmen
+            .into_iter()
+            .enumerate()
+            .map(|(index, (elo, rollman))| (rollman, elo.0.into_inner(), index))
+    });
+
+    let mut ghosts_by_user = HashMap::new();
+    for (ghost, elo, user) in stats.agents.iter().filter_map(|(id, agent)| {
+        (agent.can_ghost() && agent.ghost_elo > THRESHOLD).then_some((
+            id,
+            agent.ghost_elo,
+            agent.user.clone(),
+        ))
+    }) {
+        ghosts_by_user
+            .entry(user)
+            .or_insert_with(Vec::new)
+            .push((Reverse(NotNan::new(elo).unwrap()), ghost));
+    }
+    let ghosts = ghosts_by_user
+        .into_values()
+        .flat_map(|mut user_ghosts| {
+            user_ghosts.sort_unstable();
+            user_ghosts
+                .into_iter()
+                .enumerate()
+                .map(|(rank, (elo, ghost))| (ghost, elo.0.into_inner(), rank))
+        })
+        .collect::<Vec<_>>();
+
+    for (rollman, rollman_elo, rollman_rank) in rollmen {
+        for (ghost, ghost_elo, ghost_rank) in &ghosts {
             let count = stats
                 .count_rollman_ghost
                 .get(rollman)
-                .and_then(|m| m.get(ghost).copied())
+                .and_then(|m| m.get(*ghost).copied())
                 .unwrap_or_default();
             let diff = (rollman_elo - ghost_elo).abs();
             let sum = rollman_elo + ghost_elo;
-            let weight = ((diff - sum / 1.5) / (ELO_STEP * 1.5)).exp();
+            let weight = ((diff - sum / 1.5) / (ELO_STEP * 1.5)
+                + (rollman_rank + ghost_rank) as f32 / 10.0)
+                .exp();
             pairs.push((
                 rollman,
                 ghost,
