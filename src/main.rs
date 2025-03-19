@@ -33,7 +33,6 @@ fn main() -> Result<()> {
     }
     println!("Collected {} matches", stats.matches.len());
     stats.save()?;
-    println!("Creating matches...");
     create_matches(&stats);
 
     Ok(())

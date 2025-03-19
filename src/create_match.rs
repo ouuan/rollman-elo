@@ -128,6 +128,8 @@ pub fn create_matches(stats: &Stats) {
         .expect("invalid matches JSON");
     let create_count = MAX_MATCHES.saturating_sub(judging.count + waiting.count);
 
+    println!("Creating {create_count} matches...");
+
     for (rollman, ghost, _) in pairs.into_iter().take(create_count) {
         if let Err(e) = create_match(rollman, ghost) {
             eprintln!("Failed to create match:\n{e:?}");
