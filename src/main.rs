@@ -27,7 +27,7 @@ fn main() -> Result<()> {
         .awaiting
         .min(stats.matches.last_key_value().map(|(k, _)| *k).unwrap_or(0));
     stats.awaiting = u32::MAX;
-    while fetch::fetch(&mut stats, awaiting, page)? {
+    while fetch::fetch(&mut stats, awaiting, page)? && page < 100 {
         page += 1;
         println!("Collected {} matches", stats.matches.len());
     }
