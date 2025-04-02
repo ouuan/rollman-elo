@@ -7,7 +7,7 @@ pub const TOKEN_HEADER: &str = "Authorization";
 pub static TOKEN: LazyLock<String> =
     LazyLock::new(|| std::env::var("SAIBLO_TOKEN").expect("SAIBLO_TOKEN not set"));
 
-pub const MAX_MATCHES: usize = 210;
-pub const RECENT_THRESHOLD: u32 = 10000;
+pub const MAX_MATCHES: usize = 100;
+pub const RECENT_THRESHOLD: u32 = MAX_MATCHES as u32 * 50;
 pub const ELO_BASE: f32 = 1500.0;
 pub const ELO_STEP: f32 = 300.0;
